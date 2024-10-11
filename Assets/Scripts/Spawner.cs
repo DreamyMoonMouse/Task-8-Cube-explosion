@@ -1,33 +1,42 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 public class Spawner : MonoBehaviour
 {
-    private Splitter splitter;
-
-    private void Start()
+    [SerializeField] private Cube cubePrefab;
+    [SerializeField] private Explosion explosionPrefab;
+    
+    private int _minNewCubes = 2;
+    private int _maxNewCubes = 6;
+    private int _scaleDenominator = 2;
+    
+    public void OnCubeClicked(Cube clickedCube)
     {
-        splitter = FindObjectOfType<Splitter>();
+        Vector3 spawnPosition = clickedCube.transform.position;
+        float randomValue = Random.value;
+        Debug.Log($"Log: Random.value: {randomValue}, splitChance: {clickedCube.GetSplitChance()}");
+        
+         if (randomValue <= clickedCube.GetSplitChance())
+         {
+            SpawnNewCubes(spawnPosition, clickedCube.transform.localScale / _scaleDenominator,clickedCube.GetSplitChance());
+         }
+         
+        explosionPrefab.Explode();
+        Destroy(clickedCube.gameObject); 
     }
-
-    public List<Rigidbody> SpawnNewCubes(Rigidbody prefab, Vector3 spawnPosition, Vector3 scale, float newSplitChance)
+    
+    private void SpawnNewCubes(Vector3 parentPosition, Vector3 newScale,float newSplitChance)
     {
-        int range = splitter.GetSplitCount();
-        float minHeightAboveTerrain = 0.5f;
-        List<Rigidbody> newObjects = new List<Rigidbody>();
+        int newCubesCount = Random.Range(_minNewCubes, _maxNewCubes + 1);
+        float minHeightAboveTerrain = 0.1f;
+        Debug.Log($"Log: CubesCount Random.value: {newCubesCount}");
 
-        for (int i = 0; i < range; i++)
+        for (int i = 0; i < newCubesCount; i++)
         {
-            Vector3 newPosition = spawnPosition + Random.insideUnitSphere;
+            Vector3 newPosition = parentPosition + Random.insideUnitSphere;
             newPosition.y = Mathf.Max(newPosition.y, minHeightAboveTerrain);
-            Rigidbody newObject = Instantiate(prefab, newPosition, Random.rotation);
-            newObject.transform.localScale = scale;
-            newObject.GetComponent<Renderer>().material.color = new Color(Random.value, Random.value, Random.value);
-            Controller controller = newObject.GetComponent<Controller>();
-            controller.SetSplitChance(newSplitChance);
-            newObjects.Add(newObject);
+            Cube newCube = Instantiate(cubePrefab);
+            Color randomColor = new Color(Random.value, Random.value, Random.value);
+            newCube.Initialize(newPosition, newScale, newSplitChance, randomColor);
         }
-
-        return newObjects;
     }
 }
