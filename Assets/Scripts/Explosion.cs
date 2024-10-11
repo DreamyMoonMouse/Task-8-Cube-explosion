@@ -1,19 +1,25 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class Explosion : MonoBehaviour
 {
-    private float _explosionForce = 300f;
-    private float _explosionRadius = 2f;
+    private float _explosionForce = 5f;
+    private List<Rigidbody> _spawnedCubes = new List<Rigidbody>();
 
-    public void Explode()
+    public void RegisterCube(Rigidbody cubeRigidbody)
     {
-        Collider[] colliders = Physics.OverlapSphere(transform.position, _explosionRadius);
-
-        foreach (var collider in colliders)
+        _spawnedCubes.Add(cubeRigidbody);
+    }
+    public void Explode(Cube clickedCube)
+    {
+        Vector3 explosionPosition = clickedCube.transform.position;
+        
+        foreach (Rigidbody rigidbody in _spawnedCubes)
         {
-            if (collider.TryGetComponent<Rigidbody>(out Rigidbody rigidbody) && rigidbody.gameObject != this.gameObject)
+            if (rigidbody != null && rigidbody.gameObject != clickedCube.gameObject)
             {
-                rigidbody.AddExplosionForce(_explosionForce, transform.position, _explosionRadius);
+                Vector3 direction = (rigidbody.transform.position - explosionPosition).normalized;
+                rigidbody.AddForce(direction * _explosionForce, ForceMode.Impulse);
             }
         }
     }
