@@ -1,29 +1,44 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
+using Random = UnityEngine.Random;
+using UnityEngine.Events;
 
 public class Spawner : MonoBehaviour
 {
-    [SerializeField] private Cube cubePrefab;
-    [SerializeField] private Explosion explosionPrefab;
+    [SerializeField] private Cube _cubePrefab;
+    [SerializeField] private Explosion _explosion;
     
+    public UnityEvent<Cube> CubeTriggered;
     private int _minNewCubes = 2;
     private int _maxNewCubes = 6;
     private int _scaleDenominator = 2;
+
+    private void OnEnable()
+    {
+        _cubePrefab.OnCubeClicked.AddListener(HandleCubeClick);
+    }
     
-    public void OnCubeClicked(Cube clickedCube)
+    private void TriggerCubes()
+        {
+            CubeTriggered.Invoke(_cubePrefab);
+        }
+    private void HandleCubeClick(Cube clickedCube)
     {
         Vector3 spawnPosition = clickedCube.transform.position;
         float randomValue = Random.value;
-        
+        clickedCube.OnCubeClicked.RemoveListener(HandleCubeClick);
+                    
          if (randomValue <= clickedCube.SplitChance)
          {
-            SpawnNewCubes(spawnPosition, clickedCube.transform.localScale / _scaleDenominator,clickedCube.SplitChance);
+            SpawnNewCubes(spawnPosition, clickedCube.transform.localScale / _scaleDenominator,clickedCube.SplitChance, clickedCube);
          }
-         
-        explosionPrefab.Explode(clickedCube);
-        Destroy(clickedCube.gameObject); 
+        
+        TriggerCubes();
     }
     
-    private void SpawnNewCubes(Vector3 parentPosition, Vector3 scale,float splitChance)
+    private void SpawnNewCubes(Vector3 parentPosition, Vector3 scale,float splitChance, Cube parentCube)
     {
         int newCubesCount = Random.Range(_minNewCubes, _maxNewCubes + 1);
         float minHeightAboveTerrain = 0.1f;
@@ -32,13 +47,13 @@ public class Spawner : MonoBehaviour
         {
             Vector3 newPosition = parentPosition + Random.insideUnitSphere;
             newPosition.y = Mathf.Max(newPosition.y, minHeightAboveTerrain);
-            Cube newCube = Instantiate(cubePrefab);
+            Cube newCube = Instantiate(parentCube);
             newCube.Initialize(newPosition, scale, splitChance);
             Rigidbody cubeRigidbody = newCube.GetComponent<Rigidbody>();
             
             if (cubeRigidbody != null)
             {
-                explosionPrefab.RegisterCube(cubeRigidbody);
+                _explosion.RegisterCube(cubeRigidbody);
             }
         }
     }
